@@ -17,7 +17,7 @@ class myApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
-          body: welcomePage(),
+          body: WelcomePage(),
         ),
       ),
     );
