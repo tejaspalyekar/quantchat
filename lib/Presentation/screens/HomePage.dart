@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     print(widget.username);
     openSocketConection();
-     final provider = Provider.of<userdata>(context, listen: false);
+    final provider = Provider.of<userdata>(context, listen: false);
     msg = provider.msg;
   }
 
@@ -79,122 +79,164 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.only(bottom: 50),
         child: FloatingActionButton.small(
             onPressed: () {},
-            backgroundColor: const Color.fromARGB(109, 39, 39, 39),
+            backgroundColor: Color.fromARGB(108, 146, 146, 146),
             elevation: 5,
             child: const Icon(
               Icons.keyboard_double_arrow_down_rounded,
               color: Color.fromARGB(255, 255, 255, 255),
             )),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       appBar: AppBar(
-        title: const Text("Quant Chat Room"),
+        title: const Text(
+          "Quant Chat Room",
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color.fromARGB(216, 0, 0, 0),
+        leading: IconButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            icon: const Icon(
+              Icons.arrow_back_sharp,
+              color: Colors.white,
+            )),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-              child: GroupedListView(
-            floatingHeader: true,
-            reverse: true,
-            stickyHeaderBackgroundColor: Colors.black45,
-            order: GroupedListOrder.DESC,
-            elements: msg,
-            groupBy: (messages) => DateTime(
-                messages.time.day, messages.time.month, messages.time.year),
-            groupHeaderBuilder: (element) => Center(
-              child: Card(
-                color: const Color.fromARGB(195, 0, 0, 0),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    DateFormat.yMMMd().format(element.time),
-                    style: TextStyle(color: Colors.grey[400]),
-                  ),
-                ),
-              ),
-            ),
-            itemBuilder: (context, element) => Align(
-              alignment: element.sender == widget.username
-                  ? Alignment.topRight
-                  : Alignment.topLeft,
-              child: Card(
-                margin: element.sender == widget.username
-                    ? const EdgeInsets.only(
-                        left: 50, top: 5, bottom: 5, right: 5)
-                    : const EdgeInsets.only(
-                        right: 50, top: 5, bottom: 5, left: 5),
-                elevation: 5,
-                child: MessageboxDesign(
-                  curruser: element.sender == widget.username,
-                  child: Column(
-                    crossAxisAlignment: element.sender == widget.username
-                        ? CrossAxisAlignment.end
-                        : CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(
-                            left: 10, right: 10, top: 5, bottom: 5),
-                        child: Text(
-                          element.message,
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text(
-                          '${element.time.hour}:${element.time.minute}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+              child: Container(
+                  decoration: const BoxDecoration(
+                      color: Colors.black,
+                      image: DecorationImage(
+                          image: AssetImage("Assets/wallpaper.jpg"))),
+                  child: GroupedListView(
+                    floatingHeader: true,
+                    reverse: true,
+                    stickyHeaderBackgroundColor: Colors.black,
+                    order: GroupedListOrder.DESC,
+                    elements: msg,
+                    groupBy: (messages) => DateTime(messages.time.day,
+                        messages.time.month, messages.time.year),
+                    groupHeaderBuilder: (element) => Center(
+                      child: Card(
+                        color: const Color.fromARGB(108, 146, 146, 146),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            DateFormat.yMMMd().format(element.time),
+                            style: TextStyle(color: Colors.grey[400]),
                           ),
                         ),
                       ),
-                    ],
+                    ),
+                    itemBuilder: (context, element) => Align(
+                      alignment: element.sender == widget.username
+                          ? Alignment.topRight
+                          : Alignment.topLeft,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          widget.username != element.sender
+                              ? Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 10, top: 5, bottom: 2),
+                                  child: Text(
+                                    element.sender.substring(1),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color.fromARGB(255, 255, 255, 255),
+                                    ),
+                                  ),
+                                )
+                              : const Text(""),
+                          Card(
+                            margin: element.sender == widget.username
+                                ? const EdgeInsets.only(left: 50, right: 5,bottom: 5)
+                                : const EdgeInsets.only(
+                                    right: 50, top: 5, bottom: 5, left: 5),
+                            elevation: 5,
+                            child: MessageboxDesign(
+                              curruser: element.sender == widget.username,
+                              child: Column(
+                                crossAxisAlignment:
+                                    element.sender == widget.username
+                                        ? CrossAxisAlignment.end
+                                        : CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        left: 20, right: 20, bottom: 2, top: 5),
+                                    child: Text(
+                                      element.message,
+                                      style: const TextStyle(
+                                          fontSize: 15, color: Colors.white),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10),
+                                    child: Text(
+                                      '${element.time.hour}:${element.time.minute}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white60,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ))),
+          Container(
+            color: const Color.fromARGB(216, 0, 0, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Container(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(20)),
+                      color: Color.fromARGB(255, 90, 90, 90),
+                    ),
+                    child: TextField(
+                      controller: txtcontroller,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                          contentPadding:
+                              const EdgeInsets.only(left: 10, right: 10),
+                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          hintText: "Message..",
+                          border: InputBorder.none),
+                      minLines: 1,
+                      maxLines: 10,
+                    ),
                   ),
                 ),
-              ),
+                CircleAvatar(
+                    radius: 25,
+                    backgroundColor: const Color.fromARGB(255, 68, 109, 70),
+                    child: IconButton(
+                      onPressed: () {
+                        if (txtcontroller.text != "") {
+                          sendmessage();
+                        }
+                      },
+                      icon: curricon,
+                      color: Colors.white,
+                      alignment: Alignment.center,
+                      iconSize: 25,
+                    ))
+              ],
             ),
-          )),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Container(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(20)),
-                    color: Color.fromARGB(255, 54, 54, 54),
-                  ),
-                  child: TextField(
-                    controller: txtcontroller,
-                    style: TextStyle(color: Colors.grey[400]),
-                    decoration: InputDecoration(
-                        contentPadding:
-                            const EdgeInsets.only(left: 10, right: 10),
-                        hintStyle: TextStyle(color: Colors.grey[400]),
-                        hintText: "Message..",
-                        border: InputBorder.none),
-                    minLines: 1,
-                    maxLines: 10,
-                  ),
-                ),
-              ),
-              CircleAvatar(
-                  radius: 25,
-                  backgroundColor: const Color.fromARGB(255, 68, 109, 70),
-                  child: IconButton(
-                    onPressed: () {
-                      if (txtcontroller.text != "") {
-                        sendmessage();
-                      }
-                    },
-                    icon: curricon,
-                    color: Colors.white,
-                    alignment: Alignment.center,
-                    iconSize: 25,
-                  ))
-            ],
           ),
         ],
       ),

@@ -22,7 +22,7 @@ class ReuseableButton extends StatelessWidget {
         child: Text(
           btntitle,
           style: GoogleFonts.openSans(
-              color: Colors.white, fontSize: 22, fontWeight: FontWeight.w500),
+              color: const Color.fromARGB(255, 0, 0, 0), fontSize: 22, fontWeight: FontWeight.w500),
         ));
   }
 }

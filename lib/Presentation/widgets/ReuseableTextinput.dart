@@ -3,11 +3,9 @@ import 'package:flutter/material.dart';
 class ReuseableTextInputField extends StatefulWidget {
   ReuseableTextInputField(
       {super.key,
-      required this.hide,
       required this.label,
       required this.hint,
       required this.inputController});
-  bool hide;
   String label;
   String hint;
   TextEditingController? inputController;
@@ -20,28 +18,17 @@ class _ReuseableTextInputFieldState extends State<ReuseableTextInputField> {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      style: TextStyle(color: Colors.white),
       controller: widget.inputController,
-      obscureText: widget.hide,
       decoration: InputDecoration(
-          labelStyle: const TextStyle(color: Colors.black, fontSize: 18),
+          labelStyle: const TextStyle(color: Color.fromARGB(255, 255, 255, 255), 
+          fontSize: 18),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          suffixIcon: 
-                  widget.label == "enter password"
-              ? GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      if (widget.hide == true) {
-                        widget.hide = false;
-                      } else {
-                        widget.hide = true;
-                      }
-                    });
-                  },
-                  child: const Icon(Icons.remove_red_eye_outlined))
-              : const Text(""),
-          label: Text(widget.label),
+          
+          label: Text(widget.label,style: TextStyle(color: Colors.white),),
+          hintStyle: TextStyle(color: Colors.white),
           hintText: widget.hint),
     );
   }
