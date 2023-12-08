@@ -1,110 +1,75 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:grouped_list/grouped_list.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:quantchat/Data%20Model/Messagedata.dart';
 import 'package:quantchat/Presentation/widgets/messageboxdesign.dart';
+import 'package:quantchat/Provider/Userdata.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
 
+// ignore: must_be_immutable
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
+  HomePage({super.key, required this.username});
+  String username;
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  List<Messagedata> msg = [];
   Icon curricon = const Icon(Icons.send);
-  List<Messagedata> messages = [
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 3, minutes: 3)),
-        message: "message",
-        currUserMsg: true),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 3, minutes: 4)),
-        message: "message",
-        currUserMsg: false),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 3, minutes: 4)),
-        message: "message",
-        currUserMsg: true),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 3, minutes: 5)),
-        message: "message",
-        currUserMsg: false),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 3, minutes: 3)),
-        message: "message",
-        currUserMsg: true),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 4, minutes: 3)),
-        message: "message",
-        currUserMsg: false),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 4, minutes: 4)),
-        message: "message",
-        currUserMsg: true),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 4, minutes: 5)),
-        message: "message",
-        currUserMsg: true),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 4, minutes: 6)),
-        message: "message",
-        currUserMsg: false),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 4, minutes: 7)),
-        message: "message",
-        currUserMsg: true),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 5, minutes: 8)),
-        message: "message",
-        currUserMsg: false),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 5, minutes: 9)),
-        message: "message",
-        currUserMsg: true),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 5, minutes: 9)),
-        message: "message",
-        currUserMsg: false),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 5, minutes: 3)),
-        message: "message",
-        currUserMsg: true),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 6, minutes: 3)),
-        message: "message",
-        currUserMsg: true),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 6, minutes: 3)),
-        message: "message",
-        currUserMsg: false),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 6, minutes: 3)),
-        message: "message",
-        currUserMsg: true),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 6, minutes: 3)),
-        message: "message",
-        currUserMsg: false),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 6, minutes: 3)),
-        message: "message",
-        currUserMsg: true),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 6, minutes: 3)),
-        message: "message",
-        currUserMsg: false),
-    Messagedata(
-        time: DateTime.now().subtract(const Duration(days: 6, minutes: 3)),
-        message: "message",
-        currUserMsg: true),
-  ];
-  TextEditingController textcontroller = TextEditingController();
+  io.Socket? socket;
+  TextEditingController txtcontroller = TextEditingController();
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    print(widget.username);
+    openSocketConection();
+     final provider = Provider.of<userdata>(context, listen: false);
+    msg = provider.msg;
+  }
+
+  openSocketConection() {
+    socket = io.io('http://10.0.2.2:3000', <String, dynamic>{
+      'autoConnect': false,
+      'transports': ['websocket'],
+    });
+    socket?.connect();
+    socket?.onConnect((_) {
+      print("Connection established");
+    });
+    socket?.on('chat_message', (data) {
+      final message = Messagedata.fromjson(jsonDecode(data));
+      final provider = Provider.of<userdata>(context, listen: false);
+      provider.setmessage(message);
+      setState(() {
+        msg = provider.msg;
+      });
+    });
+    socket?.onDisconnect((_) => print("connection Disconnection"));
+    socket?.onConnectError((err) => print(err));
+    socket?.onError((err) => print(err));
+  }
+
+  sendmessage() {
+    Map<String, dynamic> typedmsg = {
+      "msg": txtcontroller.text.trim(),
+      "date": DateTime.now().toIso8601String(),
+      "sender": widget.username,
+    };
+    socket?.emit('chat_message', jsonEncode(typedmsg));
+    txtcontroller.clear();
+  }
 
   @override
   void dispose() {
     super.dispose();
-    textcontroller.dispose();
+    txtcontroller.dispose();
+    socket!.disconnect();
+    socket!.dispose();
   }
 
   @override
@@ -122,7 +87,7 @@ class _HomePageState extends State<HomePage> {
             )),
       ),
       appBar: AppBar(
-        title: const Text("QuantChat"),
+        title: const Text("Quant Chat Room"),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,7 +98,7 @@ class _HomePageState extends State<HomePage> {
             reverse: true,
             stickyHeaderBackgroundColor: Colors.black45,
             order: GroupedListOrder.DESC,
-            elements: messages,
+            elements: msg,
             groupBy: (messages) => DateTime(
                 messages.time.day, messages.time.month, messages.time.year),
             groupHeaderBuilder: (element) => Center(
@@ -149,31 +114,33 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             itemBuilder: (context, element) => Align(
-              alignment:
-                  element.currUserMsg ? Alignment.topRight : Alignment.topLeft,
+              alignment: element.sender == widget.username
+                  ? Alignment.topRight
+                  : Alignment.topLeft,
               child: Card(
-                
-                margin: element.currUserMsg
+                margin: element.sender == widget.username
                     ? const EdgeInsets.only(
                         left: 50, top: 5, bottom: 5, right: 5)
                     : const EdgeInsets.only(
                         right: 50, top: 5, bottom: 5, left: 5),
                 elevation: 5,
                 child: MessageboxDesign(
-                  curruser: element.currUserMsg,
+                  curruser: element.sender == widget.username,
                   child: Column(
-                    crossAxisAlignment: element.currUserMsg
+                    crossAxisAlignment: element.sender == widget.username
                         ? CrossAxisAlignment.end
                         : CrossAxisAlignment.start,
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(
                             left: 10, right: 10, top: 5, bottom: 5),
-                        child: Text(element.message),
+                        child: Text(
+                          element.message,
+                          style: const TextStyle(fontSize: 18),
+                        ),
                       ),
                       Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                         child: Text(
                           '${element.time.hour}:${element.time.minute}',
                           style: const TextStyle(
@@ -200,7 +167,7 @@ class _HomePageState extends State<HomePage> {
                     color: Color.fromARGB(255, 54, 54, 54),
                   ),
                   child: TextField(
-                    controller: textcontroller,
+                    controller: txtcontroller,
                     style: TextStyle(color: Colors.grey[400]),
                     decoration: InputDecoration(
                         contentPadding:
@@ -218,15 +185,8 @@ class _HomePageState extends State<HomePage> {
                   backgroundColor: const Color.fromARGB(255, 68, 109, 70),
                   child: IconButton(
                     onPressed: () {
-                      if (textcontroller.text != "") {
-                        final msg = Messagedata(
-                            time: DateTime.now(),
-                            message: textcontroller.text,
-                            currUserMsg: true);
-                        setState(() {
-                          messages.add(msg);
-                          textcontroller.clear();
-                        });
+                      if (txtcontroller.text != "") {
+                        sendmessage();
                       }
                     },
                     icon: curricon,
