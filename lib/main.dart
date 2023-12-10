@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:quantchat/Presentation/screens/welcomepage.dart';
+import 'package:quantchat/Presentation/screens/Welcomepage.dart';
 import 'package:quantchat/Provider/Userdata.dart';
 import 'package:provider/provider.dart';
 Future<void> main() async {
