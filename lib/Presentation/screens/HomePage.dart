@@ -1,16 +1,13 @@
 import 'dart:convert';
-import 'dart:typed_data';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:grouped_list/grouped_list.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:quantchat/Data%20Model/Messagedata.dart';
-import 'package:quantchat/Presentation/widgets/messageboxdesign.dart';
+import 'package:quantchat/Presentation/widgets/ChattingFrame.dart';
 import 'package:quantchat/Provider/Userdata.dart';
+import 'package:quantchat/Service/AudioService.dart';
+import 'package:quantchat/Service/ClientSide.dart';
 import 'package:record/record.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
-import 'dart:io';
 
 // ignore: must_be_immutable
 class HomePage extends StatefulWidget {
@@ -21,29 +18,50 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // Current mode for audio recording or text messaging
   String currmode = "Message...";
+
+  // Audio service instance
+  late AudioService audioservice;
+
+  // ClientSide instance for handling message sending
+  late ClientSide clientside;
+
+  // List to store chat messages
   List<Messagedata> msg = [];
+
+  // Socket for communication
   io.Socket? socket;
+
+  // Controller for text input
   TextEditingController txtcontroller = TextEditingController();
-  late AudioPlayer player;
+
+  // Record instance for audio recording
   late Record audioRecord;
-  String audiopath = '';
+
+  // String for bs4str
   String bs4str = "";
+
+  // Flag for recording status
   bool isRecording = false;
-  bool isPlaying = false;
-  Messagedata? currplayingmegbox;
+
+  // Scroll controller for chat list
   ScrollController listScrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
-    player = AudioPlayer();
+    // Initialize instances and open socket connection
     audioRecord = Record();
-    openSocketConection();
+    clientside = ClientSide();
+    openSocketConnection();
+    audioservice = AudioService(socket: socket, sender: widget.username);
     final provider = Provider.of<userdata>(context, listen: false);
     msg = provider.msg;
   }
 
-  openSocketConection() {
+  // Open socket connection
+  openSocketConnection() {
     socket = io.io('http://10.0.2.2:3000', <String, dynamic>{
       'autoConnect': false,
       'transports': ['websocket'],
@@ -52,7 +70,17 @@ class _HomePageState extends State<HomePage> {
     socket?.onConnect((_) {
       print("Connection established");
     });
+    socket?.onDisconnect((_) => print("Connection Disconnection"));
+    socket?.onConnectError((err) => print(err));
+    socket?.onError((err) => print(err));
+    listen();
+  }
+
+  // Listen for incoming chat messages
+  listen() {
+    print("listen");
     socket?.on('chat_message', (data) {
+      print("event in listen");
       final message = Messagedata.fromjson(jsonDecode(data));
       final provider = Provider.of<userdata>(context, listen: false);
       provider.setmessage(message);
@@ -60,19 +88,12 @@ class _HomePageState extends State<HomePage> {
         msg = provider.msg;
       });
     });
-    socket?.onDisconnect((_) => print("connection Disconnection"));
-    socket?.onConnectError((err) => print(err));
-    socket?.onError((err) => print(err));
   }
 
+  // Send text message
   sendmessage() {
-    Map<String, dynamic> typedmsg = {
-      "msg": txtcontroller.text.trim(),
-      "date": DateTime.now().toIso8601String(),
-      "sender": widget.username,
-      "audio": bs4str
-    };
-    socket?.emit('chat_message', jsonEncode(typedmsg));
+    clientside.sendmessage(
+        txtcontroller.text.trim(), widget.username.trim(), bs4str, socket);
     txtcontroller.clear();
     setState(() {
       bs4str = "";
@@ -82,76 +103,13 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     super.dispose();
+    // Dispose resources when the widget is disposed
     txtcontroller.dispose();
     socket!.disconnect();
     socket!.dispose();
     audioRecord.dispose();
     audioRecord.dispose();
   }
-
-  Future<void> convertaudio() async {
-    File audiofile = File(audiopath);
-    Uint8List audiobytes = await audiofile.readAsBytes();
-    bs4str = base64.encode(audiobytes);
-  }
-
-  Future<void> playaudio(String audiobs64) async {
-    Uint8List decodedbytes = base64.decode(audiobs64);
-    print(decodedbytes);
-    try {
-      await player.play(BytesSource(decodedbytes));
-      setState(() {
-        isPlaying = true;
-      });
-      print("audio playing..");
-    } catch (e) {
-      print('error while playing audio ${e.toString()}');
-    }
-  }
-
-  void stopPlayer() {
-    player.stop();
-    setState(() {
-      isPlaying = false;
-    });
-  }
-
-  Future<void> startRecording() async {
-    try {
-      if (await audioRecord.hasPermission()) {
-        await audioRecord.start();
-        setState(() {
-          isRecording = true;
-        });
-      }
-    } catch (e) {
-      print("error while recording");
-    }
-  }
-
-  Future<void> stopRecording() async {
-    try {
-      String? path = await audioRecord.stop();
-      print(path);
-      setState(() {
-        isRecording = false;
-        audiopath = path!;
-      });
-      await convertaudio();
-      await sendmessage();
-    } catch (e) {
-      print("error while stoping recording");
-    }
-  }
-
-  /*Future<void> playRecording() async {
-    try {
-      Source urlSource = UrlSource(audiopath);
-      player.play(urlSource);
-    } catch (e) {
-      print("error while playing audio");
-    }
-  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -191,150 +149,7 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-              child: Container(
-                  decoration: const BoxDecoration(
-                      color: Colors.black,
-                      image: DecorationImage(
-                          image: AssetImage("Assets/wallpaper.jpg"))),
-                  child: GroupedListView(
-                    controller: listScrollController,
-                    floatingHeader: true,
-                    reverse: true,
-                    stickyHeaderBackgroundColor: Colors.black,
-                    order: GroupedListOrder.DESC,
-                    elements: msg,
-                    groupBy: (messages) => DateTime(messages.time.day,
-                        messages.time.month, messages.time.year),
-                    groupHeaderBuilder: (element) => Center(
-                      child: Card(
-                        color: const Color.fromARGB(108, 146, 146, 146),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            DateFormat.yMMMd().format(element.time),
-                            style: TextStyle(color: Colors.grey[400]),
-                          ),
-                        ),
-                      ),
-                    ),
-                    itemBuilder: (context, element) => Align(
-                      alignment: element.sender == widget.username
-                          ? Alignment.topRight
-                          : Alignment.topLeft,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          widget.username != element.sender
-                              ? Padding(
-                                  padding: const EdgeInsets.only(
-                                      left: 10, top: 5, bottom: 2),
-                                  child: Text(
-                                    '~ ${element.sender.substring(1)}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color.fromARGB(255, 255, 255, 255),
-                                    ),
-                                  ),
-                                )
-                              : const Text(""),
-                          Card(
-                            margin: element.sender == widget.username
-                                ? const EdgeInsets.only(
-                                    left: 50, right: 5, bottom: 5)
-                                : const EdgeInsets.only(
-                                    right: 50, top: 5, bottom: 5, left: 5),
-                            elevation: 5,
-                            child: MessageboxDesign(
-                              curruser: element.sender == widget.username,
-                              child: Column(
-                                crossAxisAlignment:
-                                    element.sender == widget.username
-                                        ? CrossAxisAlignment.end
-                                        : CrossAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        left: 20, right: 20, bottom: 2, top: 5),
-                                    child: element.message == ""
-                                        ? SizedBox(
-                                            width: 160,
-                                            child: Row(
-                                              children: [
-                                                IconButton(
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        currplayingmegbox =
-                                                            element;
-                                                      });
-                                                      !isPlaying
-                                                          ? playaudio(element
-                                                              .audiobs64!)
-                                                          : stopPlayer();
-                                                    },
-                                                    icon: Icon(
-                                                      isPlaying &&
-                                                              element ==
-                                                                  currplayingmegbox
-                                                          ? Icons
-                                                              .stop_circle_outlined
-                                                          : Icons
-                                                              .play_arrow_rounded,
-                                                      size: 40,
-                                                      color:
-                                                          const Color.fromARGB(
-                                                              255, 255, 102, 0),
-                                                    )),
-                                                isPlaying &&
-                                                        currplayingmegbox ==
-                                                            element
-                                                    ? Row(
-                                                        children: [
-                                                          Image.asset(
-                                                            "Assets/audio_waves.gif",
-                                                            width: 50,
-                                                          ),
-                                                          Image.asset(
-                                                            "Assets/audio_waves.gif",
-                                                            width: 50,
-                                                          ),
-                                                        ],
-                                                      )
-                                                    : Image.asset(
-                                                        "Assets/audio_waves.png",
-                                                        width: 100,
-                                                      ),
-                                              ],
-                                            ),
-                                          )
-                                        : Text(
-                                            element.message!,
-                                            style: const TextStyle(
-                                                fontSize: 15,
-                                                color: Colors.white),
-                                          ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10),
-                                    child: Text(
-                                      '${element.time.hour}:${element.time.minute}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color:
-                                            Color.fromARGB(255, 255, 255, 255),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ))),
+        ChattingFrame(msg: msg,socket: socket,listScrollController: listScrollController),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
             color: const Color.fromARGB(255, 0, 0, 0),
@@ -345,7 +160,7 @@ class _HomePageState extends State<HomePage> {
                     radius: 25,
                     backgroundColor: const Color.fromARGB(255, 109, 72, 4),
                     child: IconButton(
-                      onPressed: () {
+                      onPressed: () async {
                         setState(() {
                           txtcontroller.clear();
                           if (!isRecording) {
@@ -354,7 +169,17 @@ class _HomePageState extends State<HomePage> {
                             currmode = "Message...";
                           }
                         });
-                        !isRecording ? startRecording() : stopRecording();
+                        bool recordstate;
+                        if (!isRecording) {
+                          recordstate =
+                              await audioservice.startRecording(audioRecord);
+                        } else {
+                          recordstate =
+                              await audioservice.stopRecording(audioRecord);
+                        }
+                        setState(() {
+                          isRecording = recordstate;
+                        });
                       },
                       icon: isRecording
                           ? const Icon(Icons.stop_circle)

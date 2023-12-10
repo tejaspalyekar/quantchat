@@ -14,9 +14,10 @@ class myApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context)=> userdata())],
-      child: MaterialApp(
+      child: const MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
+          // WelcomePage as the initial body of the app
           body: WelcomePage(),
         ),
       ),
