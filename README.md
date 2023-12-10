@@ -1,16 +1,28 @@
-# quantchat
+# QuantChat
 
-A new Flutter project.
+QuantChat is a simple chat application built with Flutter and Socket.IO for real-time communication. This project aims to provide a platform for users to engage in chat conversations seamlessly.
+
+## Features
+
+- Real-time messaging: Experience instant messaging with Socket.IO integration.
+- Audio messaging: Send and receive audio messages for a more interactive chat experience.
+- User-friendly interface: A clean and intuitive UI for easy navigation and interaction.
+
+## Technologies Used
+
+- Flutter: Frontend framework for building cross-platform mobile applications.
+- Socket.IO: Enables real-time, bidirectional, and event-based communication.
+- Dart: Programming language used for Flutter development.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Prerequisites
 
-A few resources to get you started if this is your first Flutter project:
+Make sure you have Flutter and Dart installed on your system. You'll also need Node.js and npm for the server.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Installation
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/tejaspalyekar/quantchat.git
