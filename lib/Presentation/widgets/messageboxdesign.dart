@@ -13,12 +13,14 @@ class MessageboxDesign extends StatelessWidget {
             gradient: LinearGradient(
                 colors: curruser
                     ? [
-                        Color.fromARGB(210, 22, 110, 0),
-                        Color.fromARGB(234, 36, 172, 2),
+                        const Color.fromARGB(234, 15, 77, 0),
+                        const Color.fromARGB(234, 20, 97, 0),
+                        const Color.fromARGB(234, 24, 121, 0),
                       ]
                     : [
-                        Color.fromARGB(223, 0, 110, 201),
-                        Color.fromARGB(255, 0, 70, 128),
+                        const Color.fromARGB(255, 0, 70, 128),
+                        const Color.fromARGB(255, 0, 79, 143),
+                        const Color.fromARGB(234, 0, 91, 165),
                       ]),
             borderRadius: const BorderRadius.all(Radius.circular(12))),
         child: child);

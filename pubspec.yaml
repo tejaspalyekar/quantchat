@@ -41,6 +41,9 @@ dependencies:
   google_fonts: ^6.1.0
   socket_io_client: ^2.0.3+1
   fluttertoast: ^8.2.4
+  record: ^4.4.4
+  audioplayers: ^5.2.1
+  permission_handler: ^11.1.0
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:grouped_list/grouped_list.dart';
 import 'package:intl/intl.dart';
@@ -6,7 +8,9 @@ import 'package:provider/provider.dart';
 import 'package:quantchat/Data%20Model/Messagedata.dart';
 import 'package:quantchat/Presentation/widgets/messageboxdesign.dart';
 import 'package:quantchat/Provider/Userdata.dart';
+import 'package:record/record.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'dart:io';
 
 // ignore: must_be_immutable
 class HomePage extends StatefulWidget {
@@ -17,16 +21,23 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  String currmode = "Message...";
   List<Messagedata> msg = [];
-  Icon curricon = const Icon(Icons.send);
   io.Socket? socket;
   TextEditingController txtcontroller = TextEditingController();
-
+  late AudioPlayer player;
+  late Record audioRecord;
+  String audiopath = '';
+  String bs4str = "";
+  bool isRecording = false;
+  bool isPlaying = false;
+  Messagedata? currplayingmegbox;
+  ScrollController listScrollController = ScrollController();
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    print(widget.username);
+    player = AudioPlayer();
+    audioRecord = Record();
     openSocketConection();
     final provider = Provider.of<userdata>(context, listen: false);
     msg = provider.msg;
@@ -59,9 +70,13 @@ class _HomePageState extends State<HomePage> {
       "msg": txtcontroller.text.trim(),
       "date": DateTime.now().toIso8601String(),
       "sender": widget.username,
+      "audio": bs4str
     };
     socket?.emit('chat_message', jsonEncode(typedmsg));
     txtcontroller.clear();
+    setState(() {
+      bs4str = "";
+    });
   }
 
   @override
@@ -70,7 +85,73 @@ class _HomePageState extends State<HomePage> {
     txtcontroller.dispose();
     socket!.disconnect();
     socket!.dispose();
+    audioRecord.dispose();
+    audioRecord.dispose();
   }
+
+  Future<void> convertaudio() async {
+    File audiofile = File(audiopath);
+    Uint8List audiobytes = await audiofile.readAsBytes();
+    bs4str = base64.encode(audiobytes);
+  }
+
+  Future<void> playaudio(String audiobs64) async {
+    Uint8List decodedbytes = base64.decode(audiobs64);
+    print(decodedbytes);
+    try {
+      await player.play(BytesSource(decodedbytes));
+      setState(() {
+        isPlaying = true;
+      });
+      print("audio playing..");
+    } catch (e) {
+      print('error while playing audio ${e.toString()}');
+    }
+  }
+
+  void stopPlayer() {
+    player.stop();
+    setState(() {
+      isPlaying = false;
+    });
+  }
+
+  Future<void> startRecording() async {
+    try {
+      if (await audioRecord.hasPermission()) {
+        await audioRecord.start();
+        setState(() {
+          isRecording = true;
+        });
+      }
+    } catch (e) {
+      print("error while recording");
+    }
+  }
+
+  Future<void> stopRecording() async {
+    try {
+      String? path = await audioRecord.stop();
+      print(path);
+      setState(() {
+        isRecording = false;
+        audiopath = path!;
+      });
+      await convertaudio();
+      await sendmessage();
+    } catch (e) {
+      print("error while stoping recording");
+    }
+  }
+
+  /*Future<void> playRecording() async {
+    try {
+      Source urlSource = UrlSource(audiopath);
+      player.play(urlSource);
+    } catch (e) {
+      print("error while playing audio");
+    }
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -78,8 +159,13 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 50),
         child: FloatingActionButton.small(
-            onPressed: () {},
-            backgroundColor: Color.fromARGB(108, 146, 146, 146),
+            onPressed: () {
+              if (listScrollController.hasClients) {
+                final position = listScrollController.position.minScrollExtent;
+                listScrollController.jumpTo(position);
+              }
+            },
+            backgroundColor: const Color.fromARGB(108, 146, 146, 146),
             elevation: 5,
             child: const Icon(
               Icons.keyboard_double_arrow_down_rounded,
@@ -112,6 +198,7 @@ class _HomePageState extends State<HomePage> {
                       image: DecorationImage(
                           image: AssetImage("Assets/wallpaper.jpg"))),
                   child: GroupedListView(
+                    controller: listScrollController,
                     floatingHeader: true,
                     reverse: true,
                     stickyHeaderBackgroundColor: Colors.black,
@@ -143,7 +230,7 @@ class _HomePageState extends State<HomePage> {
                                   padding: const EdgeInsets.only(
                                       left: 10, top: 5, bottom: 2),
                                   child: Text(
-                                    element.sender.substring(1),
+                                    '~ ${element.sender.substring(1)}',
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: Color.fromARGB(255, 255, 255, 255),
@@ -153,7 +240,8 @@ class _HomePageState extends State<HomePage> {
                               : const Text(""),
                           Card(
                             margin: element.sender == widget.username
-                                ? const EdgeInsets.only(left: 50, right: 5,bottom: 5)
+                                ? const EdgeInsets.only(
+                                    left: 50, right: 5, bottom: 5)
                                 : const EdgeInsets.only(
                                     right: 50, top: 5, bottom: 5, left: 5),
                             elevation: 5,
@@ -168,11 +256,63 @@ class _HomePageState extends State<HomePage> {
                                   Padding(
                                     padding: const EdgeInsets.only(
                                         left: 20, right: 20, bottom: 2, top: 5),
-                                    child: Text(
-                                      element.message,
-                                      style: const TextStyle(
-                                          fontSize: 15, color: Colors.white),
-                                    ),
+                                    child: element.message == ""
+                                        ? SizedBox(
+                                            width: 160,
+                                            child: Row(
+                                              children: [
+                                                IconButton(
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        currplayingmegbox =
+                                                            element;
+                                                      });
+                                                      !isPlaying
+                                                          ? playaudio(element
+                                                              .audiobs64!)
+                                                          : stopPlayer();
+                                                    },
+                                                    icon: Icon(
+                                                      isPlaying &&
+                                                              element ==
+                                                                  currplayingmegbox
+                                                          ? Icons
+                                                              .stop_circle_outlined
+                                                          : Icons
+                                                              .play_arrow_rounded,
+                                                      size: 40,
+                                                      color:
+                                                          const Color.fromARGB(
+                                                              255, 255, 102, 0),
+                                                    )),
+                                                isPlaying &&
+                                                        currplayingmegbox ==
+                                                            element
+                                                    ? Row(
+                                                        children: [
+                                                          Image.asset(
+                                                            "Assets/audio_waves.gif",
+                                                            width: 50,
+                                                          ),
+                                                          Image.asset(
+                                                            "Assets/audio_waves.gif",
+                                                            width: 50,
+                                                          ),
+                                                        ],
+                                                      )
+                                                    : Image.asset(
+                                                        "Assets/audio_waves.png",
+                                                        width: 100,
+                                                      ),
+                                              ],
+                                            ),
+                                          )
+                                        : Text(
+                                            element.message!,
+                                            style: const TextStyle(
+                                                fontSize: 15,
+                                                color: Colors.white),
+                                          ),
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
@@ -181,7 +321,8 @@ class _HomePageState extends State<HomePage> {
                                       '${element.time.hour}:${element.time.minute}',
                                       style: const TextStyle(
                                         fontSize: 12,
-                                        color: Colors.white60,
+                                        color:
+                                            Color.fromARGB(255, 255, 255, 255),
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -195,10 +336,33 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ))),
           Container(
-            color: const Color.fromARGB(216, 0, 0, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            color: const Color.fromARGB(255, 0, 0, 0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                CircleAvatar(
+                    radius: 25,
+                    backgroundColor: const Color.fromARGB(255, 109, 72, 4),
+                    child: IconButton(
+                      onPressed: () {
+                        setState(() {
+                          txtcontroller.clear();
+                          if (!isRecording) {
+                            currmode = "Recording...";
+                          } else {
+                            currmode = "Message...";
+                          }
+                        });
+                        !isRecording ? startRecording() : stopRecording();
+                      },
+                      icon: isRecording
+                          ? const Icon(Icons.stop_circle)
+                          : const Icon(Icons.mic),
+                      color: Colors.white,
+                      alignment: Alignment.center,
+                      iconSize: 25,
+                    )),
                 Expanded(
                   child: Container(
                     margin:
@@ -214,7 +378,7 @@ class _HomePageState extends State<HomePage> {
                           contentPadding:
                               const EdgeInsets.only(left: 10, right: 10),
                           hintStyle: TextStyle(color: Colors.grey[400]),
-                          hintText: "Message..",
+                          hintText: currmode,
                           border: InputBorder.none),
                       minLines: 1,
                       maxLines: 10,
@@ -230,7 +394,7 @@ class _HomePageState extends State<HomePage> {
                           sendmessage();
                         }
                       },
-                      icon: curricon,
+                      icon: const Icon(Icons.send),
                       color: Colors.white,
                       alignment: Alignment.center,
                       iconSize: 25,
