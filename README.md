@@ -26,3 +26,28 @@ Make sure you have Flutter and Dart installed on your system. You'll also need N
 
    ```bash
    git clone https://github.com/tejaspalyekar/quantchat.git
+
+   
+1. Navigate to the project directory:
+   ```bash
+   cd quantchat
+
+3. Install dependencies:
+   ```bash
+   flutter pub get
+
+5. Start the Flutter app:
+   ```bash
+   flutter run
+
+4. Run the Socket.IO server:
+   ```bash
+   cd server
+   npm install
+   node server.js
+   
+###Usage
+Launch the QuantChat app.
+Enter your username.
+Start real-time chatting with friends.
+Utilize the audio messaging feature for more interactive conversations.
