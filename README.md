@@ -46,8 +46,8 @@ Make sure you have Flutter and Dart installed on your system. You'll also need N
    npm install
    node server.js
    
-###Usage
-Launch the QuantChat app.
-Enter your username.
-Start real-time chatting with friends.
-Utilize the audio messaging feature for more interactive conversations.
+### Usage
+1) Launch the QuantChat app.
+2) Enter your username.
+3) Start real-time chatting with friends.
+4) Utilize the audio messaging feature for more interactive conversations.
