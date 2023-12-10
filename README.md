@@ -1,6 +1,7 @@
 # QuantChat
-
 QuantChat is a simple chat application built with Flutter and Socket.IO for real-time communication. This project aims to provide a platform for users to engage in chat conversations seamlessly.
+
+# Project video Link:    https://youtu.be/SpIwE2KA1Gk
 
 ## Features
 
