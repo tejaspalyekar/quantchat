@@ -44,6 +44,7 @@ dependencies:
   record: ^4.4.4
   audioplayers: ^5.2.1
   permission_handler: ^11.1.0
+  just_audio: ^0.9.36
 
 dev_dependencies:
   flutter_test:
