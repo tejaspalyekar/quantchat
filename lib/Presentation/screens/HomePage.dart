@@ -19,7 +19,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // Current mode for audio recording or text messaging
-  String currmode = "Message...";
+  String currmode = "Message..";
 
   // Audio service instance
   late AudioService audioservice;
