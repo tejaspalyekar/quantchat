@@ -11,8 +11,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 
 // ignore: must_be_immutable
 class HomePage extends StatefulWidget {
-  HomePage({super.key, required this.username});
-  String username;
+  const HomePage({super.key});
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -40,11 +39,12 @@ class _HomePageState extends State<HomePage> {
   late Record audioRecord;
 
   // String for bs4str
-  String bs4str = "";
+  //String bs4str = "";
 
   // Flag for recording status
   bool isRecording = false;
 
+  late String username;
   // Scroll controller for chat list
   ScrollController listScrollController = ScrollController();
 
@@ -55,9 +55,21 @@ class _HomePageState extends State<HomePage> {
     audioRecord = Record();
     clientside = ClientSide();
     openSocketConnection();
-    audioservice = AudioService(socket: socket, sender: widget.username);
     final provider = Provider.of<userdata>(context, listen: false);
+    audioservice = AudioService(socket: socket, sender: provider.username);
+    username = provider.username;
     msg = provider.msg;
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    // Dispose resources when the widget is disposed
+    txtcontroller.dispose();
+    socket!.disconnect();
+    socket!.dispose();
+    audioRecord.dispose();
+    audioRecord.dispose();
   }
 
   // Open socket connection
@@ -78,9 +90,7 @@ class _HomePageState extends State<HomePage> {
 
   // Listen for incoming chat messages
   listen() {
-    print("listen");
     socket?.on('chat_message', (data) {
-      print("event in listen");
       final message = Messagedata.fromjson(jsonDecode(data));
       final provider = Provider.of<userdata>(context, listen: false);
       provider.setmessage(message);
@@ -93,35 +103,21 @@ class _HomePageState extends State<HomePage> {
   // Send text message
   sendmessage() {
     clientside.sendmessage(
-        txtcontroller.text.trim(), widget.username.trim(), bs4str, socket);
+        txtcontroller.text.trim(), username.trim(), "", socket);
     txtcontroller.clear();
-    setState(() {
-      bs4str = "";
-    });
-  }
 
-  @override
-  void dispose() {
-    super.dispose();
-    // Dispose resources when the widget is disposed
-    txtcontroller.dispose();
-    socket!.disconnect();
-    socket!.dispose();
-    audioRecord.dispose();
-    audioRecord.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 50),
         child: FloatingActionButton.small(
             onPressed: () {
-              if (listScrollController.hasClients) {
-                final position = listScrollController.position.minScrollExtent;
-                listScrollController.jumpTo(position);
-              }
+              final position = listScrollController.position.minScrollExtent;
+              listScrollController.jumpTo(position);
             },
             backgroundColor: const Color.fromARGB(108, 146, 146, 146),
             elevation: 5,
@@ -136,7 +132,7 @@ class _HomePageState extends State<HomePage> {
           "Quant Chat Room",
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: const Color.fromARGB(216, 0, 0, 0),
+        backgroundColor: const Color.fromARGB(215, 32, 32, 32),
         leading: IconButton(
             onPressed: () {
               Navigator.of(context).pop();
@@ -149,12 +145,14 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-        ChattingFrame(msg: msg,socket: socket,listScrollController: listScrollController),
+          ChattingFrame(
+              msg: msg,
+              socket: socket,
+              listScrollController: listScrollController),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
             color: const Color.fromARGB(255, 0, 0, 0),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 CircleAvatar(
                     radius: 25,

@@ -43,51 +43,44 @@ class _LoginPageState extends State<WelcomePage> {
                 const SizedBox(
                   height: 50,
                 ),
-                Column(
-                  children: [
-                    // ReusableTextInputField for username input
-                    ReuseableTextInputField(
-                      label: "username",
-                      hint: "Enter username eg @tejas_02",
-                      inputController: userinputcontroller,
-                    ),
-                    const SizedBox(
-                      height: 40,
-                    ),
-                    // ReusableButton for initiating the chat
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ReuseableButton(
-                        fun: () {
-                          // Check if the username is valid and navigate to HomePage
-                          if (userinputcontroller.text != "@" &&
-                              userinputcontroller.text != "" &&
-                              userinputcontroller.text != "") {
-                            value.username = userinputcontroller.text.trim();
-                            Navigator.of(context).push(
-                              DialogRoute(
-                                context: context,
-                                builder: (context) => HomePage(
-                                  username: value.username,
-                                ),
-                              ),
-                            );
-                          } else {
-                            // Show a toast message for invalid username
-                            Fluttertoast.showToast(
-                              msg: "Username Invalid",
-                              backgroundColor: Colors.black,
-                              fontSize: 20,
-                              textColor: Colors.white,
-                            );
-                          }
-                        },
-                        btncolor: Colors.white,
-                        btntitle: "Lets chat",
-                      ),
-                    ),
-                  ],
+                ReuseableTextInputField(
+                  label: "username",
+                  hint: "Enter username eg @tejas_02",
+                  inputController: userinputcontroller,
+                ),
+                const SizedBox(
+                  height: 40,
+                ),
+                // ReusableButton for initiating the chat
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ReuseableButton(
+                    fun: () {
+                      // Check if the username is valid and navigate to HomePage
+                      if (userinputcontroller.text != "@" &&
+                          userinputcontroller.text != "" &&
+                          userinputcontroller.text != "") {
+                        value.username = userinputcontroller.text.trim();
+                        Navigator.of(context).push(
+                          DialogRoute(
+                            context: context,
+                            builder: (context) => const HomePage(),
+                          ),
+                        );
+                      } else {
+                        // Show a toast message for invalid username
+                        Fluttertoast.showToast(
+                          msg: "Username Invalid",
+                          backgroundColor: Colors.black,
+                          fontSize: 20,
+                          textColor: Colors.white,
+                        );
+                      }
+                    },
+                    btncolor: Colors.white,
+                    btntitle: "Lets chat",
+                  ),
                 ),
               ],
             ),
